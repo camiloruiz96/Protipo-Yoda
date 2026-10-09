@@ -52,6 +52,7 @@
     linkSent: false,
     clientSubmitted: false,
     confirmations: new Set(),
+    caseConfirmations: {},
     statusOverrides: {},
     selectedCaseId: 'ana',
     filters: 'Todos',
@@ -414,7 +415,7 @@
           <article class="card card--flat"><div class="card__head"><div><h2 class="card__title">Documentos</h2></div></div><div class="card__body"><div class="document-row"><span>DNI / NIE</span>${fileStatus(state.client.documents.dni)}</div><div class="document-row"><span>Contrato / documentación laboral</span>${fileStatus(state.client.documents.contract)}</div></div></article>
           <article class="card card--flat"><div class="card__body"><strong>Origen</strong><div class="origin-chips"><span class="chip">${icons.mail} Email</span><span class="chip">${icons.doc} Documento</span><span class="chip">${icons.users} Cliente</span></div></div></article>
         </div>
-        ${missing.length ? missingInfoPanel(missing) : technicalPanel()}
+        ${missing.length ? `<div class="right-stack">${missingInfoPanel(missing)}${technicalPreviewPanel()}</div>` : technicalPanel('ana')}
       </div>
 
       <div class="action-bar">
@@ -426,13 +427,39 @@
 
   function genericCaseDetail(c) {
     const status = getCaseStatus(c);
+    const needsTechnicalReview = status === 'Requiere revisión';
     return yodaShell(html`
       <div class="breadcrumb">Yoda / Trámites / Altas / ${escapeHTML(c.name)}</div>
-      <div class="yoda-title-row"><div><div class="title-with-status"><h1 class="yoda-title">${escapeHTML(c.name)}</h1>${statusPill(status)}</div><p class="yoda-title__subtitle">Caso mock para visualizar diferentes estados operativos.</p></div><button class="button button--ghost button--small" type="button" id="backToCases">Volver a Altas</button></div>
+      <div class="yoda-title-row"><div><div class="title-with-status"><h1 class="yoda-title">${escapeHTML(c.name)}</h1>${statusPill(status)}</div><p class="yoda-title__subtitle">${needsTechnicalReview ? 'La información del cliente está completa. Solo queda confirmar la configuración técnica.' : 'Caso mock para visualizar diferentes estados operativos.'}</p></div><button class="button button--ghost button--small" type="button" id="backToCases">Volver a Altas</button></div>
       <div class="status-control card card--flat"><div><span class="eyebrow">Control manual</span><strong>Cambiar estado del expediente</strong><p>El técnico puede corregir el estado según el contexto real del caso.</p></div><div class="status-select-wrap"><select class="field" id="manualStatus">${STATUS_OPTIONS.map(s => `<option ${status === s ? 'selected' : ''}>${escapeHTML(s)}</option>`).join('')}</select><button class="button button--ghost button--small" type="button" id="clearStatusOverride">Usar estado original</button></div></div>
-      <div class="prepare-grid prepare-grid--single">
-        <article class="card card--flat"><div class="card__head"><div><h2 class="card__title">Estado del expediente</h2><p class="card__meta">${escapeHTML(getCasePending(c) || 'Sin pendientes')}</p></div></div><div class="card__body"><div class="mock-detail-grid"><div><span>Cliente</span><strong>${escapeHTML(c.client)}</strong></div><div><span>Inicio</span><strong>${escapeHTML(c.start)}</strong></div><div><span>Estado</span>${statusPill(status)}</div><div><span>Pendiente</span><strong>${escapeHTML(getCasePending(c))}</strong></div></div></div></article>
-      </div>
+      ${needsTechnicalReview ? `
+        <div class="case-header">
+          <div class="case-header__item"><span class="case-avatar">${escapeHTML(c.initials)}</span><div><strong>${escapeHTML(c.name)}</strong><span>Trabajador</span></div></div>
+          <div class="case-header__item">${icons.briefcase}<div><strong>${escapeHTML(c.client)}</strong><span>Cliente</span></div></div>
+          <div class="case-header__item">${icons.calendar}<div><strong>${escapeHTML(c.start)}</strong><span>Fecha de incorporación</span></div></div>
+        </div>
+        <div class="readiness-bar">
+          ${readinessStep('Información del cliente','Completa',icons.users,'done')}
+          ${readinessStep('Documentación','Completa',icons.doc,'done')}
+          ${readinessStep('Validaciones','Sin incidencias',icons.shield,'done')}
+          ${readinessStep('Configuración técnica','Pendiente',icons.gear,'pending')}
+        </div>
+        <div class="prepare-grid">
+          <div class="stack">
+            <article class="card card--flat"><div class="card__head"><div><h2 class="card__title">Resumen del expediente</h2><p class="card__meta">Datos preparados para revisión técnica.</p></div></div><div class="card__body"><dl class="summary-list">
+              ${summaryRowMaybe('Trabajador',c.name,true)}
+              ${summaryRowMaybe('Cliente',c.client,true)}
+              ${summaryRowMaybe('Fecha de incorporación',c.start,true)}
+              ${summaryRowMaybe('Información cliente','Completa',true)}
+              ${summaryRowMaybe('Documentación','Completa',true)}
+            </dl></div></article>
+            <article class="card card--flat"><div class="card__body"><strong>Objetivo</strong><p class="card__meta" style="margin-top:6px">Confirmar solo los códigos laborales necesarios antes de enviar el expediente.</p></div></article>
+          </div>
+          ${technicalPanel(c.id)}
+        </div>` : `
+        <div class="prepare-grid prepare-grid--single">
+          <article class="card card--flat"><div class="card__head"><div><h2 class="card__title">Estado del expediente</h2><p class="card__meta">${escapeHTML(getCasePending(c) || 'Sin pendientes')}</p></div></div><div class="card__body"><div class="mock-detail-grid"><div><span>Cliente</span><strong>${escapeHTML(c.client)}</strong></div><div><span>Inicio</span><strong>${escapeHTML(c.start)}</strong></div><div><span>Estado</span>${statusPill(status)}</div><div><span>Pendiente</span><strong>${escapeHTML(getCasePending(c))}</strong></div></div></div></article>
+        </div>`}
     `,'prepare');
   }
 
@@ -440,9 +467,21 @@
     return `<article class="card card--flat missing-panel"><div class="tech-panel__head"><div><h2>Información pendiente</h2><p>El expediente no está listo para revisión técnica. Faltan datos o documentos del cliente.</p></div>${statusPill('Falta información')}</div><div class="missing-list">${missing.map(item => `<div class="missing-item"><span class="missing-item__icon">${icons.alert}</span><div><strong>${escapeHTML(item)}</strong><span>Necesario para preparar el expediente.</span></div></div>`).join('')}</div><div class="missing-actions"><button class="button button--primary" type="button" id="requestMissing">Solicitar información al cliente</button><button class="button button--ghost" type="button" id="returnToForm">Completar manualmente</button></div></article>`;
   }
 
-  function technicalPanel() {
-    const ready = state.confirmations.size === technicalFields.length;
-    return `<article class="card card--flat tech-panel"><div class="tech-panel__head"><div><h2>Solo te queda confirmar</h2><p>Hemos preseleccionado opciones ilustrativas para reducir clicks. El técnico mantiene el criterio final.</p></div><span class="status ${ready ? 'status--ready' : 'status--review'} confirm-count">${state.confirmations.size} / ${technicalFields.length} confirmadas</span></div><div class="tech-fields">${technicalFields.map(field => techField(field)).join('')}</div><div class="tech-note"><strong>Prototipo:</strong> los códigos y valores mostrados son ejemplos de UX y no constituyen recomendaciones normativas reales.</div></article>`;
+  function technicalPanel(caseId = 'ana') {
+    const confirmationSet = caseId === 'ana'
+      ? state.confirmations
+      : (state.caseConfirmations[caseId] ||= new Set());
+    const ready = confirmationSet.size === technicalFields.length;
+    return `<article class="card card--flat tech-panel"><div class="tech-panel__head"><div><span class="eyebrow">Último paso</span><h2>Solo te queda confirmar</h2><p>La información del cliente ya está preparada. Hemos preseleccionado opciones ilustrativas para reducir clicks; el técnico mantiene el criterio final.</p></div><span class="status ${ready ? 'status--ready' : 'status--review'} confirm-count">${confirmationSet.size} / ${technicalFields.length} confirmadas</span></div><div class="tech-fields">${technicalFields.map(field => techField(field, caseId, confirmationSet)).join('')}</div><div class="tech-note"><strong>Prototipo:</strong> los códigos y valores mostrados son ejemplos de UX y no constituyen recomendaciones normativas reales.</div></article>`;
+  }
+
+  function technicalPreviewPanel() {
+    return `<article class="card card--flat tech-preview"><div class="tech-panel__head"><div><span class="eyebrow">Siguiente paso</span><h2>Solo te queda confirmar</h2><p>Cuando el cliente complete los datos pendientes, el técnico verá únicamente estas confirmaciones técnicas.</p></div><span class="status status--neutral">Bloqueado por faltantes</span></div><div class="tech-preview__items">${technicalFields.map(field => `<div><span>${escapeHTML(field.label)}</span><strong>${escapeHTML(field.options[0].replace(' (demo)',''))}</strong></div>`).join('')}</div></article>`;
+  }
+
+  function techField(field, caseId = 'ana', confirmationSet = state.confirmations) {
+    const confirmed = confirmationSet.has(field.id);
+    return `<div class="tech-field ${confirmed ? 'is-confirmed' : ''}" data-tech-field="${field.id}"><div class="tech-label"><div class="tech-label__line">${field.label}<span class="tag ${field.badgeClass}">${field.badge}</span></div></div><div class="tech-control"><select aria-label="${field.label}">${field.options.map(opt => `<option>${opt}</option>`).join('')}</select><small>${field.hint}</small></div><button class="button button--ghost button--small confirm-button" type="button" data-confirm="${field.id}" data-confirm-case="${caseId}">${confirmed ? '✓ Confirmado' : 'Confirmar'}</button></div>`;
   }
 
   function summaryRowMaybe(label,value,always=false) {
@@ -454,10 +493,6 @@
 
   function readinessStep(title, subtitle, icon, mode) { return `<div class="readiness-step is-${mode}"><div class="readiness-step__icon">${icon}</div><div class="readiness-step__copy"><b>${title}</b><span>${mode === 'done' ? '✓ ' : '● '}${subtitle}</span></div></div>`; }
 
-  function techField(field) {
-    const confirmed = state.confirmations.has(field.id);
-    return `<div class="tech-field ${confirmed ? 'is-confirmed' : ''}" data-tech-field="${field.id}"><div class="tech-label"><div class="tech-label__line">${field.label}<span class="tag ${field.badgeClass}">${field.badge}</span></div></div><div class="tech-control"><select aria-label="${field.label}">${field.options.map(opt => `<option>${opt}</option>`).join('')}</select><small>${field.hint}</small></div><button class="button button--ghost button--small confirm-button" type="button" data-confirm="${field.id}">${confirmed ? '✓ Confirmado' : 'Confirmar'}</button></div>`;
-  }
 
   function statusPill(status, display) {
     const map = {
@@ -478,7 +513,7 @@
   }
 
   function yodaShell(content, active) {
-    return html`<section class="yoda-layout"><aside class="yoda-sidebar" aria-label="Navegación de Yoda"><div class="yoda-logo">Y</div><nav class="yoda-nav"><button type="button" aria-label="Calendario">${icons.calendar}</button><button class="${active === 'cases' || active === 'prepare' ? 'is-active' : ''}" type="button" aria-label="Trámites">${icons.doc}</button><button type="button" aria-label="Empresas">${icons.briefcase}</button><button type="button" aria-label="Mensajes">${icons.chat}</button><button type="button" aria-label="Personas">${icons.users}</button></nav></aside><div class="yoda-main"><header class="yoda-topbar"><div class="yoda-topbar__left"><button class="icon-button" type="button" aria-label="Abrir menú">${icons.menu}</button><button class="icon-button" type="button" aria-label="Buscar">${icons.search}</button></div><div class="yoda-user"><button class="icon-button" type="button" aria-label="Teléfono">${icons.phone}</button><span class="avatar">FM</span><span>Federico Muches</span></div></header><div class="yoda-content">${content}</div></div></section>`;
+    return html`<section class="yoda-layout"><aside class="yoda-sidebar" aria-label="Navegación de Yoda"><div class="yoda-logo">Y</div><nav class="yoda-nav"><button type="button" aria-label="Calendario">${icons.calendar}</button><button class="${active === 'cases' || active === 'prepare' ? 'is-active' : ''}" type="button" aria-label="Trámites">${icons.doc}</button><button type="button" aria-label="Empresas">${icons.briefcase}</button><button type="button" aria-label="Mensajes">${icons.chat}</button><button type="button" aria-label="Personas">${icons.users}</button></nav></aside><div class="yoda-main"><header class="yoda-topbar"><div class="yoda-topbar__left"><button class="icon-button" type="button" aria-label="Abrir menú">${icons.menu}</button><button class="icon-button" type="button" aria-label="Buscar">${icons.search}</button></div><div class="yoda-user"><button class="icon-button" type="button" aria-label="Teléfono">${icons.phone}</button><span class="avatar">JV</span><span>Juan Valencia</span></div></header><div class="yoda-content">${content}</div></div></section>`;
   }
 
   function successView() {
@@ -515,8 +550,12 @@
 
     document.querySelectorAll('[data-confirm]').forEach(button => button.addEventListener('click', () => {
       const id = button.dataset.confirm;
-      if (state.confirmations.has(id)) state.confirmations.delete(id); else state.confirmations.add(id);
-      delete state.statusOverrides.ana;
+      const caseId = button.dataset.confirmCase || 'ana';
+      const confirmationSet = caseId === 'ana'
+        ? state.confirmations
+        : (state.caseConfirmations[caseId] ||= new Set());
+      if (confirmationSet.has(id)) confirmationSet.delete(id); else confirmationSet.add(id);
+      delete state.statusOverrides[caseId];
       render();
       toast(state.confirmations.has(id) ? 'Campo confirmado.' : 'Confirmación retirada.');
     }));

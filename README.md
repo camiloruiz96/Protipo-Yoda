@@ -57,3 +57,8 @@ También puedes servirlo con cualquier servidor estático.
 - **Primary:** Active Handling Time por Alta.
 - **Secondary:** follow-ups con cliente hasta preparar el expediente.
 - **Guardrails:** accuracy, time to ready y client completion rate.
+
+
+## Paso de revisión técnica
+
+El prototipo conserva el bloque **“Solo te queda confirmar”** como pieza central de la demo. Cuando el expediente del cliente está completo, el técnico confirma cinco campos técnicos sugeridos antes de que el caso pase a **Expediente listo para enviar**. En los casos con faltantes, se muestra una vista previa bloqueada de este siguiente paso para mantener claro el flujo.
