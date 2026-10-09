@@ -62,3 +62,7 @@ También puedes servirlo con cualquier servidor estático.
 ## Paso de revisión técnica
 
 El prototipo conserva el bloque **“Solo te queda confirmar”** como pieza central de la demo. Cuando el expediente del cliente está completo, el técnico confirma cinco campos técnicos sugeridos antes de que el caso pase a **Expediente listo para enviar**. En los casos con faltantes, se muestra una vista previa bloqueada de este siguiente paso para mantener claro el flujo.
+
+## v2.2 — Confirmación técnica editable
+
+En la pantalla **“Solo te queda confirmar”** el técnico puede escribir o corregir manualmente los códigos/valores técnicos (contrato, grupo de cotización, convenio, categoría y CCC) y confirmar cada campo de forma individual. Si modifica un campo ya confirmado, la confirmación se invalida y debe confirmarlo de nuevo. Además, puede avanzar esta configuración aunque todavía falte información del cliente; el expediente solo pasa a **“Expediente listo para enviar”** cuando la información del cliente está completa y todas las confirmaciones técnicas están validadas.

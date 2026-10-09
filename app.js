@@ -53,6 +53,8 @@
     clientSubmitted: false,
     confirmations: new Set(),
     caseConfirmations: {},
+    technicalValues: {},
+    caseTechnicalValues: {},
     statusOverrides: {},
     selectedCaseId: 'ana',
     filters: 'Todos',
@@ -63,11 +65,11 @@
   let state = defaultState();
 
   const technicalFields = [
-    { id: 'contract', label: 'Tipo de contrato', badge: 'Sugerido', badgeClass: '', hint: 'Ejemplo ilustrativo. El técnico mantiene el criterio final.', options: ['100 — Indefinido (demo)', '200 — Temporal (demo)'] },
-    { id: 'group', label: 'Grupo de cotización', badge: 'Sugerido', badgeClass: '', hint: 'Ejemplo ilustrativo según el puesto informado.', options: ['07 — Aux. administrativos (demo)', '05 — Oficiales administrativos (demo)'] },
-    { id: 'agreement', label: 'Convenio colectivo', badge: 'Preseleccionado', badgeClass: 'tag--blue', hint: 'Ejemplo ilustrativo según el sector del cliente.', options: ['Oficinas y despachos (demo)', 'Hostelería (demo)'] },
-    { id: 'category', label: 'Categoría / nivel', badge: 'Sugerido', badgeClass: '', hint: 'Ejemplo ilustrativo según el puesto.', options: ['Auxiliar administrativa (demo)', 'Administrativa (demo)'] },
-    { id: 'ccc', label: 'Cuenta de cotización (CCC)', badge: 'Sugerido', badgeClass: '', hint: 'Ejemplo ilustrativo según el centro de trabajo.', options: ['Madrid Centro — CCC demo', 'Madrid Norte — CCC demo'] }
+    { id: 'contract', label: 'Código de contrato', badge: 'Sugerido', badgeClass: '', hint: 'Introduce o corrige el código. Ejemplo de demo, no recomendación normativa.', suggestions: ['100 — Indefinido (demo)', '200 — Temporal (demo)'] },
+    { id: 'group', label: 'Grupo de cotización', badge: 'Sugerido', badgeClass: '', hint: 'El técnico puede escribir el grupo/código correcto y confirmarlo.', suggestions: ['07 — Aux. administrativos (demo)', '05 — Oficiales administrativos (demo)'] },
+    { id: 'agreement', label: 'Convenio colectivo / código', badge: 'Sugerido', badgeClass: 'tag--blue', hint: 'Escribe o ajusta el convenio aplicable antes de confirmar.', suggestions: ['Oficinas y despachos (demo)', 'Hostelería (demo)'] },
+    { id: 'category', label: 'Categoría / nivel profesional', badge: 'Sugerido', badgeClass: '', hint: 'Campo editable: el técnico conserva el criterio final.', suggestions: ['Auxiliar administrativa (demo)', 'Administrativa (demo)'] },
+    { id: 'ccc', label: 'Cuenta de cotización (CCC)', badge: 'Sugerido', badgeClass: '', hint: 'Introduce o corrige el CCC que corresponda al centro de trabajo.', suggestions: ['Madrid Centro — CCC demo', 'Madrid Norte — CCC demo'] }
   ];
 
   const mockCases = [
@@ -415,7 +417,7 @@
           <article class="card card--flat"><div class="card__head"><div><h2 class="card__title">Documentos</h2></div></div><div class="card__body"><div class="document-row"><span>DNI / NIE</span>${fileStatus(state.client.documents.dni)}</div><div class="document-row"><span>Contrato / documentación laboral</span>${fileStatus(state.client.documents.contract)}</div></div></article>
           <article class="card card--flat"><div class="card__body"><strong>Origen</strong><div class="origin-chips"><span class="chip">${icons.mail} Email</span><span class="chip">${icons.doc} Documento</span><span class="chip">${icons.users} Cliente</span></div></div></article>
         </div>
-        ${missing.length ? `<div class="right-stack">${missingInfoPanel(missing)}${technicalPreviewPanel()}</div>` : technicalPanel('ana')}
+        ${missing.length ? `<div class="right-stack">${missingInfoPanel(missing)}${technicalPanel('ana', { clientStillMissing: true })}</div>` : technicalPanel('ana')}
       </div>
 
       <div class="action-bar">
@@ -467,21 +469,35 @@
     return `<article class="card card--flat missing-panel"><div class="tech-panel__head"><div><h2>Información pendiente</h2><p>El expediente no está listo para revisión técnica. Faltan datos o documentos del cliente.</p></div>${statusPill('Falta información')}</div><div class="missing-list">${missing.map(item => `<div class="missing-item"><span class="missing-item__icon">${icons.alert}</span><div><strong>${escapeHTML(item)}</strong><span>Necesario para preparar el expediente.</span></div></div>`).join('')}</div><div class="missing-actions"><button class="button button--primary" type="button" id="requestMissing">Solicitar información al cliente</button><button class="button button--ghost" type="button" id="returnToForm">Completar manualmente</button></div></article>`;
   }
 
-  function technicalPanel(caseId = 'ana') {
+  function getTechnicalValues(caseId = 'ana') {
+    const target = caseId === 'ana'
+      ? state.technicalValues
+      : (state.caseTechnicalValues[caseId] ||= {});
+    technicalFields.forEach(field => {
+      if (!(field.id in target)) target[field.id] = field.suggestions[0];
+    });
+    return target;
+  }
+
+  function technicalPanel(caseId = 'ana', { clientStillMissing = false } = {}) {
     const confirmationSet = caseId === 'ana'
       ? state.confirmations
       : (state.caseConfirmations[caseId] ||= new Set());
     const ready = confirmationSet.size === technicalFields.length;
-    return `<article class="card card--flat tech-panel"><div class="tech-panel__head"><div><span class="eyebrow">Último paso</span><h2>Solo te queda confirmar</h2><p>La información del cliente ya está preparada. Hemos preseleccionado opciones ilustrativas para reducir clicks; el técnico mantiene el criterio final.</p></div><span class="status ${ready ? 'status--ready' : 'status--review'} confirm-count">${confirmationSet.size} / ${technicalFields.length} confirmadas</span></div><div class="tech-fields">${technicalFields.map(field => techField(field, caseId, confirmationSet)).join('')}</div><div class="tech-note"><strong>Prototipo:</strong> los códigos y valores mostrados son ejemplos de UX y no constituyen recomendaciones normativas reales.</div></article>`;
+    getTechnicalValues(caseId);
+    return `<article class="card card--flat tech-panel"><div class="tech-panel__head"><div><span class="eyebrow">Configuración técnica</span><h2>Solo te queda confirmar</h2><p>${clientStillMissing ? 'Puedes avanzar la configuración técnica mientras esperas la información pendiente del cliente. Introduce o corrige los códigos y confirma cada campo.' : 'Introduce o corrige los códigos necesarios y confirma cada campo. Las sugerencias solo sirven para reducir trabajo; el técnico mantiene el criterio final.'}</p></div><span class="status ${ready ? 'status--ready' : 'status--review'} confirm-count">${confirmationSet.size} / ${technicalFields.length} confirmadas</span></div>${clientStillMissing ? '<div class="tech-note tech-note--warning"><strong>Aún faltan datos del cliente.</strong> Puedes preparar estos códigos ahora, pero el expediente no pasará a “Expediente listo para enviar” hasta completar ambos bloques.</div>' : ''}<div class="tech-fields">${technicalFields.map(field => techField(field, caseId, confirmationSet)).join('')}</div><div class="tech-note"><strong>Prototipo:</strong> los códigos y valores mostrados son ejemplos de UX. El técnico puede escribir otros valores y debe confirmarlos antes de continuar.</div></article>`;
   }
 
   function technicalPreviewPanel() {
-    return `<article class="card card--flat tech-preview"><div class="tech-panel__head"><div><span class="eyebrow">Siguiente paso</span><h2>Solo te queda confirmar</h2><p>Cuando el cliente complete los datos pendientes, el técnico verá únicamente estas confirmaciones técnicas.</p></div><span class="status status--neutral">Bloqueado por faltantes</span></div><div class="tech-preview__items">${technicalFields.map(field => `<div><span>${escapeHTML(field.label)}</span><strong>${escapeHTML(field.options[0].replace(' (demo)',''))}</strong></div>`).join('')}</div></article>`;
+    return `<article class="card card--flat tech-preview"><div class="tech-panel__head"><div><span class="eyebrow">Siguiente paso</span><h2>Solo te queda confirmar</h2><p>Cuando el cliente complete los datos pendientes, el técnico verá únicamente estas confirmaciones técnicas.</p></div><span class="status status--neutral">Bloqueado por faltantes</span></div><div class="tech-preview__items">${technicalFields.map(field => `<div><span>${escapeHTML(field.label)}</span><strong>${escapeHTML(field.suggestions[0].replace(' (demo)',''))}</strong></div>`).join('')}</div></article>`;
   }
 
   function techField(field, caseId = 'ana', confirmationSet = state.confirmations) {
     const confirmed = confirmationSet.has(field.id);
-    return `<div class="tech-field ${confirmed ? 'is-confirmed' : ''}" data-tech-field="${field.id}"><div class="tech-label"><div class="tech-label__line">${field.label}<span class="tag ${field.badgeClass}">${field.badge}</span></div></div><div class="tech-control"><select aria-label="${field.label}">${field.options.map(opt => `<option>${opt}</option>`).join('')}</select><small>${field.hint}</small></div><button class="button button--ghost button--small confirm-button" type="button" data-confirm="${field.id}" data-confirm-case="${caseId}">${confirmed ? '✓ Confirmado' : 'Confirmar'}</button></div>`;
+    const values = getTechnicalValues(caseId);
+    const value = values[field.id] || '';
+    const listId = `suggestions-${caseId}-${field.id}`;
+    return `<div class="tech-field ${confirmed ? 'is-confirmed' : ''}" data-tech-field="${field.id}"><div class="tech-label"><div class="tech-label__line">${field.label}<span class="tag ${field.badgeClass}">${confirmed ? 'Confirmado' : field.badge}</span></div></div><div class="tech-control"><input class="field tech-value" type="text" value="${escapeHTML(value)}" list="${listId}" aria-label="${escapeHTML(field.label)}" data-tech-input="${field.id}" data-tech-case="${caseId}"><datalist id="${listId}">${field.suggestions.map(opt => `<option value="${escapeHTML(opt)}"></option>`).join('')}</datalist><small>${field.hint}</small></div><button class="button ${confirmed ? 'button--primary' : 'button--ghost'} button--small confirm-button" type="button" data-confirm="${field.id}" data-confirm-case="${caseId}">${confirmed ? '✓ Confirmado' : 'Confirmar'}</button></div>`;
   }
 
   function summaryRowMaybe(label,value,always=false) {
@@ -548,16 +564,41 @@
 
     document.querySelector('#newRequest')?.addEventListener('click', () => { state.formStep = 1; routeTo('completion'); });
 
-    document.querySelectorAll('[data-confirm]').forEach(button => button.addEventListener('click', () => {
-      const id = button.dataset.confirm;
-      const caseId = button.dataset.confirmCase || 'ana';
+    document.querySelectorAll('[data-tech-input]').forEach(input => input.addEventListener('input', event => {
+      const caseId = event.target.dataset.techCase || 'ana';
+      const id = event.target.dataset.techInput;
+      const values = getTechnicalValues(caseId);
+      values[id] = event.target.value;
       const confirmationSet = caseId === 'ana'
         ? state.confirmations
         : (state.caseConfirmations[caseId] ||= new Set());
-      if (confirmationSet.has(id)) confirmationSet.delete(id); else confirmationSet.add(id);
+      if (confirmationSet.has(id)) {
+        confirmationSet.delete(id);
+        delete state.statusOverrides[caseId];
+        const row = event.target.closest('.tech-field');
+        row?.classList.remove('is-confirmed');
+        const button = row?.querySelector('[data-confirm]');
+        if (button) { button.textContent = 'Confirmar'; button.classList.remove('button--primary'); button.classList.add('button--ghost'); }
+        toast('Valor modificado. Vuelve a confirmarlo.');
+      }
+    }));
+
+    document.querySelectorAll('[data-confirm]').forEach(button => button.addEventListener('click', () => {
+      const id = button.dataset.confirm;
+      const caseId = button.dataset.confirmCase || 'ana';
+      const values = getTechnicalValues(caseId);
+      const confirmationSet = caseId === 'ana'
+        ? state.confirmations
+        : (state.caseConfirmations[caseId] ||= new Set());
+      if (!confirmationSet.has(id) && !(values[id] || '').trim()) {
+        toast('Introduce un valor antes de confirmar.');
+        return;
+      }
+      const wasConfirmed = confirmationSet.has(id);
+      if (wasConfirmed) confirmationSet.delete(id); else confirmationSet.add(id);
       delete state.statusOverrides[caseId];
       render();
-      toast(state.confirmations.has(id) ? 'Campo confirmado.' : 'Confirmación retirada.');
+      toast(wasConfirmed ? 'Confirmación retirada.' : 'Campo confirmado.');
     }));
 
     document.querySelector('#manualStatus')?.addEventListener('change', event => {

@@ -436,3 +436,18 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 .tech-preview__items span { display:block; color:var(--muted); font-size:9px; }
 .tech-preview__items strong { display:block; margin-top:3px; font-size:10px; color:var(--ink); }
 @media (max-width:760px){ .tech-preview__items{grid-template-columns:1fr;} }
+
+/* v2.2 — editable technical confirmation */
+.tech-note--warning {
+  margin-bottom: 14px;
+  background: #fff8df;
+  border: 1px solid #ecd98a;
+  color: #6d5510;
+}
+.tech-control .tech-value {
+  width: 100%;
+}
+.tech-field.is-confirmed .tech-value {
+  border-color: #8fc9a1;
+  background: #f4fbf6;
+}
