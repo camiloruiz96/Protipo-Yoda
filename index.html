@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Prototipo conceptual de Yoda para validar la preparación estructurada de Altas en Zinco." />
+  <title>Zinco / Yoda — Prototipo de Altas</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <a class="skip-link" href="#app-main">Saltar al contenido</a>
+
+  <div id="app" class="demo-app">
+    <header class="demo-header" aria-label="Controles del prototipo">
+      <div class="demo-brand">
+        <span class="demo-mark" aria-hidden="true">Z</span>
+        <div>
+          <strong>Zinco / Yoda</strong>
+          <span>Concept prototype</span>
+        </div>
+      </div>
+
+      <nav class="demo-steps" aria-label="Pasos de la demo">
+        <button class="demo-step is-active" type="button" data-route="request" aria-current="step">
+          <span>1</span><b>Solicitud</b>
+        </button>
+        <span class="demo-step-line" aria-hidden="true"></span>
+        <button class="demo-step" type="button" data-route="completion">
+          <span>2</span><b>Completar</b>
+        </button>
+        <span class="demo-step-line" aria-hidden="true"></span>
+        <button class="demo-step" type="button" data-route="cases">
+          <span>3</span><b>Trámites</b>
+        </button>
+        <span class="demo-step-line" aria-hidden="true"></span>
+        <button class="demo-step" type="button" data-route="prepare">
+          <span>4</span><b>Preparar</b>
+        </button>
+        <span class="demo-step-line" aria-hidden="true"></span>
+        <button class="demo-step" type="button" data-route="success">
+          <span>5</span><b>Listo</b>
+        </button>
+      </nav>
+
+      <div class="demo-actions">
+        <button class="button button--ghost button--small" type="button" id="openExperiment">Ver hipótesis</button>
+        <button class="icon-button" type="button" id="resetDemo" aria-label="Reiniciar demo" title="Reiniciar demo">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.34 5.66M20 4v7h-7"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main id="app-main" tabindex="-1">
+      <!-- Views are rendered by app.js -->
+    </main>
+
+    <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
+  </div>
+
+  <dialog class="modal" id="experimentModal" aria-labelledby="experimentTitle">
+    <div class="modal__head">
+      <div>
+        <span class="eyebrow">Experiment mode</span>
+        <h2 id="experimentTitle">Qué estamos validando</h2>
+      </div>
+      <button type="button" class="icon-button" data-close-modal aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="modal__body experiment-grid">
+      <section>
+        <h3>Hipótesis</h3>
+        <p>Si estructuramos y completamos el input antes de que el técnico tenga que reconstruirlo, reduciremos el <strong>Active Handling Time</strong> de una Alta.</p>
+      </section>
+      <section>
+        <h3>Métrica primaria</h3>
+        <p>Active Handling Time por Alta.</p>
+      </section>
+      <section>
+        <h3>Métrica secundaria</h3>
+        <p>Follow-ups con cliente hasta que el expediente queda preparado.</p>
+      </section>
+      <section>
+        <h3>Guardrails</h3>
+        <p>Accuracy · Time to Ready · Client completion rate.</p>
+      </section>
+      <section class="experiment-grid__wide">
+        <h3>Decision threshold</h3>
+        <p><strong>≥20% menos Active Handling Time</strong> sin deteriorar accuracy ni Time to Ready.</p>
+      </section>
+      <section class="experiment-grid__wide experiment-note">
+        <strong>Importante:</strong> este prototipo no valida parsing de email, WhatsApp, TGSS/SEPE ni APIs de Yoda. Para el experimento, esas integraciones se simulan con un Wizard of Oz.
+      </section>
+    </div>
+  </dialog>
+
+  <script src="./app.js"></script>
+</body>
+</html>
